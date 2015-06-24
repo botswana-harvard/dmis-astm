@@ -1,7 +1,16 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+.pydevproject
+.project
+.settings
+test-*
+db.sqlite3
+etc/*
+getresults_tx/testdata/inbox/
+getresults_tx/testdata/outbox/
+getresults_tx/testdata/archive/
+getresults_tx/testdata/viral_load/
 # C extensions
 *.so
 
