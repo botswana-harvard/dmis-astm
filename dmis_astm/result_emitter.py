@@ -3,9 +3,10 @@ from astm.constants import ENCODING
 
 from getresults_astm.records import CommonPatient, Header, CommonOrder, CommonResult, Terminator
 from getresults_astm.version import __version__ as getresults_version
-from .version import __version__ as dmis_version
+from history import History
 
 from .models import Result, ResultItem, Receive
+from .version import __version__ as dmis_version
 
 
 class Patient(object):
@@ -33,11 +34,15 @@ class ResultEmitter(object):
     aliquot_identifiers = None
 
     """A generator to emit a result as a complete ASTM message."""
-    def __init__(self, protocol_number, last_id=None):
+    def __init__(self, protocol_number):
         self.messages = self.result_generator()
         self.protocol_number = protocol_number
-        self.last_id = last_id or 0
-        self.last_id_processed = None
+        try:
+            self.last_read_id = History.objects.last().last_read_id
+        except AttributeError:
+            self.last_read_id = 0
+        self.history = History.objects.create(read_model='{}.{}'.format(
+            Receive._meta.app_label, Receive._meta.object_name))
 
     def __iter__(self):
         return self.messages
@@ -47,24 +52,29 @@ class ResultEmitter(object):
 
     def result_generator(self):
         """Yields a complete ordered message starting with H and ending with L."""
-        yield codec.encode_record(Header(**self.header_values()).to_astm(), ENCODING)
-        for receive in Receive.objects.filter(protocol_number=self.protocol_number, id__gte=self.last_id):
-            self.last_id_processed = receive.id
-            patient = Patient(receive)
-            yield codec.encode_record(
-                CommonPatient(**self.patient_values(patient, receive.receive_identifier)).to_astm(), ENCODING)
-            for result in Result.objects.filter(receive=receive):
-                order = Order(receive, result)
+        try:
+            yield codec.encode_record(Header(**self.header_values()).to_astm(), ENCODING)
+            for receive in Receive.objects.filter(
+                    protocol_number=self.protocol_number, id__gte=self.last_read_id).order_by('id'):
+                patient = Patient(receive)
                 yield codec.encode_record(
-                    CommonOrder(**self.order_values(order)).to_astm(), ENCODING)
-#                     for result in Result.objects.filter(order=order):
-#                         for result_item in ResultItem.objects.filter(result=result):
-#                             yield codec.encode_record(
-#                                 CommonResult(**self.result_values(result_item)).to_astm(), ENCODING)
-                for result_item in ResultItem.objects.filter(result=result):
+                    CommonPatient(**self.patient_values(patient, receive.receive_identifier)).to_astm(), ENCODING)
+                for result in Result.objects.filter(receive=receive):
+                    order = Order(receive, result)
                     yield codec.encode_record(
-                        CommonResult(**self.result_values(result_item)).to_astm(), ENCODING)
-        yield codec.encode_record(Terminator().to_astm(), ENCODING)
+                        CommonOrder(**self.order_values(order)).to_astm(), ENCODING)
+                    for result_item in ResultItem.objects.filter(result=result):
+                        yield codec.encode_record(
+                            CommonResult(**self.result_values(result_item)).to_astm(), ENCODING)
+                self.last_read_id = receive.id
+                self.history.last_read_id = self.last_read_id
+                self.history.save()
+            yield codec.encode_record(Terminator().to_astm(), ENCODING)
+        except KeyboardInterrupt:
+            yield codec.encode_record(Terminator().to_astm(), ENCODING)
+            print('Interrupted. Stopping at last successful message. (receive.id={})'.format(
+                self.last_read_id))
+            self.history.save()
 
     def send(self):
         return next(self.messages)

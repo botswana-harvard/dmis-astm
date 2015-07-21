@@ -4,10 +4,20 @@ from django.core.exceptions import ImproperlyConfigured, MultipleObjectsReturned
 from .managers import AliquotManager
 
 
+class Log(models.Model):
+
+    last_id = models.IntegerField(default=0)
+
+    class Meta:
+        app_label = 'logger'
+
+
 class BaseReadonlyModel(models.Model):
 
-    def save(self, *args, **kwargs):
-        raise ImproperlyConfigured('Model {} is readonly (mssql)'.format(self))
+    do_not_migrate = True
+
+#     def save(self, *args, **kwargs):
+#         raise ImproperlyConfigured('Model {} is readonly (mssql)'.format(self))
 
     class Meta:
         abstract = True

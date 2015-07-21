@@ -48,6 +48,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'dmis_astm',
+    'history',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -87,23 +88,31 @@ WSGI_APPLICATION = 'dmis_astm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
-# DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#    }
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'sqlserver_pymssql',
-        'HOST': 'sqltest.bhp.org.bw',
-        'NAME': 'bhplab',
-        'USER': 'sa',
-        'PASSWORD': 'cc3721b',
-    },
+   'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+   }
 }
-# DATABASE_ROUTERS = ['dmis_astm.routers.DmisAstmRouter']
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     },
+#     'getresults_db': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     },
+#     'dmis_db': {
+#         'ENGINE': 'sqlserver_pymssql',
+#         'HOST': 'sqltest.bhp.org.bw',
+#         'NAME': 'bhplab',
+#         'USER': 'sa',
+#         'PASSWORD': 'cc3721b',
+#     },
+# }
+# DATABASE_ROUTERS = ['dmis_astm.router.DmisAstmRouter']
 
 # DATABASES = {
 #    'default': {
