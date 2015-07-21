@@ -2,16 +2,18 @@
 import os
 from setuptools import setup
 from setuptools import find_packages
+from dmis_astm.version import __version__
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as readme:
     README = readme.read()
+
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='dmis2edc',
-    version='0.1.0dev0',
+    version=__version__,
     author=u'Erik van Widenfelt',
     author_email='ew2789@gmail.com',
     packages=find_packages(),

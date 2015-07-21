@@ -1,3 +1,8 @@
-python-mimeparse
+Django==1.7
 python-dateutil
-django-tastypie
+Unipath
+pytz
+django-mssql==1.6
+django-pymssql==1.7.0
+astm
+-e git+https://github.com/botswana-harvard/getresults-astm@develop#egg=getresults-astm

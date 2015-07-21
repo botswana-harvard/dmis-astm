@@ -47,9 +47,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'getresults_receive',
-    'getresults_aliquot',
-    'getresults',
     'dmis_astm',
 )
 
@@ -90,22 +87,23 @@ WSGI_APPLICATION = 'dmis_astm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
-DATABASES = {
-   'default': {
-       'ENGINE': 'django.db.backends.sqlite3',
-       'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-   }
-}
-
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'sqlserver_pymssql',
-#         'HOST': 'sqltest.bhp.org.bw',
-#         'NAME': 'bhplab',
-#         'USER': 'sa',
-#         'PASSWORD': 'cc3721b',
-#     },
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#    }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'sqlserver_pymssql',
+        'HOST': 'sqltest.bhp.org.bw',
+        'NAME': 'bhplab',
+        'USER': 'sa',
+        'PASSWORD': 'cc3721b',
+    },
+}
+# DATABASE_ROUTERS = ['dmis_astm.routers.DmisAstmRouter']
 
 # DATABASES = {
 #    'default': {
@@ -160,3 +158,8 @@ STATICFILES_FINDERS = (
 GIT_DIR = BASE_DIR.ancestor(1)
 MEDIA_URL = '/media/'
 
+RECEIVE_IDENTIFIER_SEED = ('AAA', '0000')
+RECEIVE_IDENTIFIER_ALPHA_PATTERN = r'^[A-Z]{3}$'
+RECEIVE_IDENTIFIER_NUMERIC_PATTERN = r'^[0-9]{4}$'
+
+ALIQUOT_IDENTIFIER_PREFIX_PATTERN = RECEIVE_IDENTIFIER_ALPHA_PATTERN[1:-1] + RECEIVE_IDENTIFIER_NUMERIC_PATTERN[1:-1]
