@@ -1,9 +1,11 @@
+import sys
+
 from astm import codec
 from astm.constants import ENCODING
 
 from getresults_astm.records import CommonPatient, Header, CommonOrder, CommonResult, Terminator
 from getresults_astm.version import __version__ as getresults_version
-from history import History
+from dmis_history import History
 
 from .models import Result, ResultItem, Receive
 from .version import __version__ as dmis_version
@@ -34,15 +36,25 @@ class ResultEmitter(object):
     aliquot_identifiers = None
 
     """A generator to emit a result as a complete ASTM message."""
-    def __init__(self, protocol_number):
-        self.messages = self.result_generator()
+    def __init__(self, generator_type, protocol_number, target):
+        if generator_type == 'records':
+            self.messages = self.record_generator()
+        else:
+            self.messages = self.result_generator()
         self.protocol_number = protocol_number
         try:
-            self.last_read_id = History.objects.last().last_read_id
-        except AttributeError:
+            history = History.objects.filter(
+                target=target, end_read_id__isnull=False
+            ).order_by('-start_read_id')[0]
+            self.last_read_id = history.end_read_id
+        except IndexError:
             self.last_read_id = 0
-        self.history = History.objects.create(read_model='{}.{}'.format(
-            Receive._meta.app_label, Receive._meta.object_name))
+        self.history = History.objects.create(
+            read_model='{}.{}'.format(Receive._meta.app_label, Receive._meta.object_name),
+            target=target,
+            start_read_id=self.last_read_id,
+            comment=protocol_number,
+        )
 
     def __iter__(self):
         return self.messages
@@ -50,7 +62,7 @@ class ResultEmitter(object):
     def __next__(self):
         return next(self.messages)
 
-    def result_generator(self):
+    def astm_generator(self):
         """Yields a complete ordered message starting with H and ending with L."""
         try:
             yield codec.encode_record(Header(**self.header_values()).to_astm(), ENCODING)
@@ -67,14 +79,47 @@ class ResultEmitter(object):
                         yield codec.encode_record(
                             CommonResult(**self.result_values(result_item)).to_astm(), ENCODING)
                 self.last_read_id = receive.id
-                self.history.last_read_id = self.last_read_id
+                self.history.end_read_id = self.last_read_id
                 self.history.save()
             yield codec.encode_record(Terminator().to_astm(), ENCODING)
         except KeyboardInterrupt:
             yield codec.encode_record(Terminator().to_astm(), ENCODING)
+            print('\nInterrupted. Stopping at last successful message. (receive.id={})\n'.format(
+                self.last_read_id))
+            self.history.save()
+
+    def record_generator(self):
+        """Yields a complete ordered message starting with H and ending with L."""
+        print('\n\nPress CTRL-C to interrupt.\n')
+        try:
+            total = Receive.objects.filter(
+                protocol_number=self.protocol_number, id__gte=self.last_read_id).count()
+            n = 0
+            for receive in Receive.objects.filter(
+                    protocol_number=self.protocol_number, id__gte=self.last_read_id).order_by('id'):
+                n += 1
+                perc = round((100 * n / total))
+                sys.stdout.write("Sending: {}% {}/{} (id={})   \r".format(perc, n, total, self.last_read_id))
+                sys.stdout.flush()
+                yield Header(**self.header_values())
+                patient = Patient(receive)
+                yield CommonPatient(**self.patient_values(patient, receive.receive_identifier))
+                for result in Result.objects.filter(receive=receive):
+                    order = Order(receive, result)
+                    yield CommonOrder(**self.order_values(order))
+                    for result_item in ResultItem.objects.filter(result=result):
+                        yield CommonResult(**self.result_values(result_item))
+                self.last_read_id = receive.id
+                self.history.end_read_id = self.last_read_id
+                self.history.save()
+                yield Terminator()
+        except KeyboardInterrupt:
+            yield Terminator()
             print('Interrupted. Stopping at last successful message. (receive.id={})'.format(
                 self.last_read_id))
             self.history.save()
+        except Exception as err:
+            print(str(err))
 
     def send(self):
         return next(self.messages)

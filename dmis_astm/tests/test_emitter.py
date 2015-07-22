@@ -5,7 +5,7 @@ from astm.constants import STX, ETX, ETB, CR, LF, CRLF
 from django.test.testcases import TestCase
 from django.utils import timezone
 from getresults_astm.records import Header, CommonPatient, CommonOrder, CommonResult, Terminator
-from history.models import History
+from dmis_history.models import History
 
 from ..models import Receive, Result, ResultItem
 from ..result_emitter import ResultEmitter
@@ -43,7 +43,7 @@ class TestEmitter(TestCase):
         Result.objects.create(
             receive=receive,
             result_datetime_char=timezone.now().strftime('%Y%m%d%H%M%S'))
-        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID')
+        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID', target='edc')
         message = next(result_emitter)
         self.assertIsInstance(Header(*decode_record(message.decode())), Header)
         message = next(result_emitter)
@@ -73,7 +73,7 @@ class TestEmitter(TestCase):
             result_quantifier='=',
             assay_datetime=timezone.now(),
             last_modified='BHP\\erik')
-        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID')
+        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID', target='edc')
         message = next(result_emitter)
         print(message)
         self.assertIsInstance(Header(*decode_record(message.decode())), Header)
@@ -99,7 +99,7 @@ class TestEmitter(TestCase):
             patient_identifier='PATIENT_ID',
             protocol_number='PROTOCOL_ID',
             edc_specimen_identifier='EDC_SPECIMEN_ID')
-        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID')
+        result_emitter = ResultEmitter(protocol_number='PROTOCOL_ID', target='edc')
         message = next(result_emitter)
         self.assertIsInstance(Header(*decode_record(message.decode())), Header)
         message = next(result_emitter)
@@ -108,7 +108,7 @@ class TestEmitter(TestCase):
         self.assertIsInstance(Terminator(*decode_record(message.decode())), Terminator)
 
     def test_result_emitter_round_trip_no_data(self):
-        result_emitter = ResultEmitter(protocol_number=None)
+        result_emitter = ResultEmitter(protocol_number=None, target='edc')
         message = next(result_emitter)
         self.assertIsInstance(Header(*decode_record(message.decode())), Header)
         message = next(result_emitter)

@@ -1,15 +1,7 @@
 from django.db import models
-from django.core.exceptions import ImproperlyConfigured, MultipleObjectsReturned
+from django.core.exceptions import MultipleObjectsReturned
 
 from .managers import AliquotManager
-
-
-class Log(models.Model):
-
-    last_id = models.IntegerField(default=0)
-
-    class Meta:
-        app_label = 'logger'
 
 
 class BaseReadonlyModel(models.Model):

@@ -1,4 +1,5 @@
 Django==1.7
+psycopg2
 python-dateutil
 Unipath
 pytz

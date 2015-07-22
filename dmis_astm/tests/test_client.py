@@ -23,8 +23,7 @@ class DummyClient(DummyMixIn, Client):
 class ClientTestCase(unittest.TestCase):
 
     def test_open_connection(self):
-        ResultEmitter.aliquots = []
-        emitter = ResultEmitter
-        client = DummyClient(emitter)
+        emitter = ResultEmitter(protocol_number=None, target='edc')
+        client = DummyClient(emitter.send)
         client.handle_connect()
         self.assertEqual(client.outbox[0], constants.ENQ)
